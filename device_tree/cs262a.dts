@@ -1,0 +1,121 @@
+/dts-v1/;
+
+/ {
+  #address-cells = <2>;
+  #size-cells = <2>;
+  compatible = "ucbbar,spike-bare-dev";
+  model = "ucbbar,spike-bare";
+  chosen {
+    stdout-path = &SERIAL0;
+    bootargs = "console=ttyS0 earlycon";
+  };
+  cpus {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    timebase-frequency = <10000000>;
+    CPU0: cpu@0 {
+      device_type = "cpu";
+      reg = <0>;
+      status = "okay";
+      compatible = "riscv";
+      riscv,isa = "rv64imafdc";
+      mmu-type = "riscv,sv57";
+      riscv,pmpregions = <16>;
+      riscv,pmpgranularity = <4>;
+      clock-frequency = <1000000000>;
+      CPU0_intc: interrupt-controller {
+        #address-cells = <2>;
+        #interrupt-cells = <1>;
+        interrupt-controller;
+        compatible = "riscv,cpu-intc";
+      };
+    };
+  };
+  memory@80000000 {
+    device_type = "memory";
+    reg = <0x0 0x80000000 0x0 0x80000000>;
+  };
+  soc {
+    #address-cells = <2>;
+    #size-cells = <2>;
+    compatible = "ucbbar,spike-bare-soc", "simple-bus";
+    ranges;
+    clint@2000000 {
+      compatible = "riscv,clint0";
+      interrupts-extended = <&CPU0_intc 3 &CPU0_intc 7 >;
+      reg = <0x0 0x2000000 0x0 0xc0000>;
+    };
+    PLIC: plic@c000000 {
+      compatible = "riscv,plic0";
+      #address-cells = <2>;
+      interrupts-extended = <&CPU0_intc 11 &CPU0_intc 9 >;
+      reg = <0x0 0xc000000 0x0 0x1000000>;
+      riscv,ndev = <0x1f>;
+      riscv,max-priority = <0xf>;
+      #interrupt-cells = <1>;
+      interrupt-controller;
+    };
+    SERIAL0: ns16550@10000000 {
+      compatible = "ns16550a";
+      clock-frequency = <10000000>;
+      interrupt-parent = <&PLIC>;
+      interrupts = <1>;
+      reg = <0x0 0x10000000 0x0 0x100>;
+      reg-shift = <0x0>;
+      reg-io-width = <0x1>;
+    };
+
+  rootcomplex: pcie@40000000 {
+    reg = <0x0 0x40000000 0x0 0x1000>;  /* allocated 4K bytes (root complex config. space) */
+    bus-range = <0x0 0x0>;
+		linux,pci-domain = <0x00>;
+		device_type = "pci";
+    compatible = "pcie-cs262a";
+    //compatible = "pci-host-cam-generic";
+    //compatible = "xlnx,axi-pcie-host-1.00.a";
+    //interrupt-parent=<&PLIC>; /* Send interrupt to interrupt controller */
+    //interrupts=<10>;          /* Assign to input 10 */
+
+
+		/* using ecam and pci root complex attached directly to
+    bus so no address translation needed, just 1:1 mapping
+    to CPU physical address */
+    #address-cells = <3>;  /* 64-bit addressing (first, configuration, second to are adddress) */
+    #size-cells = <2>;     /* 64-bit */
+
+
+		ranges = <0x42000000 0 0x80000000 0x0 0x80000000 0 0x20000000
+							0x02000000 0 0xa0000000 0x0 0xa0000000 0 0x10000000
+							0x01000000 0 0x00000000 0x0 0xb0000000 0 0x01000000>;
+
+
+
+
+
+    /* 512MB, 64-bit memory access at PCI addresss 0x0, translates to 0x80000000 in CPU physical address (memory) */
+    dma-ranges = <0x03000000 0x0 0x00000000 0x0 0x80000000 0x0 0x20000000>;
+  };
+
+
+//		pci@30000000 {
+//			interrupt-map-mask = <0x1800 0x00 0x00 0x07>;
+//			interrupt-map = <0x00 0x00 0x00 0x01 0x03 0x20 0x00 0x00 0x00 0x02 0x03 0x21 0x00 0x00 0x00 0x03 0x03 0x22 0x00 0x00 0x00 0x04 0x03 0x23 0x800 0x00 0x00 0x01 0x03 0x21 0x800 0x00 0x00 0x02 0x03 0x22 0x800 0x00 0x00 0x03 0x03 0x23 0x800 0x00 0x00 0x04 0x03 0x20 0x1000 0x00 0x00 0x01 0x03 0x22 0x1000 0x00 0x00 0x02 0x03 0x23 0x1000 0x00 0x00 0x03 0x03 0x20 0x1000 0x00 0x00 0x04 0x03 0x21 0x1800 0x00 0x00 0x01 0x03 0x23 0x1800 0x00 0x00 0x02 0x03 0x20 0x1800 0x00 0x00 0x03 0x03 0x21 0x1800 0x00 0x00 0x04 0x03 0x22>;
+//
+//		ranges = <0x1000000 0x00 0x00 0x00 0x3000000 0x00 0x10000 0x2000000 0x00 0x40000000 0x00 0x40000000 0x00 0x40000000>;
+//			reg = <0x00 0x30000000 0x00 0x10000000>;
+//			dma-coherent;
+//			bus-range = <0x00 0x00>;
+//			linux,pci-domain = <0x00>;
+//			device_type = "pci";
+//			compatible = "pci-host-cam-generic";
+//			#size-cells = <0x02>;
+//			#interrupt-cells = <0x01>;
+//			#address-cells = <0x03>;
+//		};
+
+
+ };
+  htif {
+    compatible = "ucb,htif0";
+  };
+};
