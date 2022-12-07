@@ -1,0 +1,4 @@
+**/*.dtb
+**/*.so
+test_programs/hello
+test_programs/write
