@@ -4,7 +4,7 @@
 //#include <asm/mmio.h>
 //#include <asm-generic/io.h>
 //#include <io.h>
-//#include <types.h>
+#include <inttypes.h>
 
 
 //static inline void __raw_writel(u_int32_t val, volatile void __iomem *addr) {
@@ -19,7 +19,7 @@ int main()  {
 //	__raw_writel(0xDEAF, 0x23424);
 
   int val;
-	int addr = 0x40000000;
+	uint64_t addr = 1LL * 0xffffffd004080000;
   asm volatile("lw %0, 0(%1)" : "=r" (val) : "r" (addr));
 
 
